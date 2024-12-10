@@ -3,7 +3,7 @@
 ## REQUISITOS:
 * Conta AWS
 
-## Instalação e configuração do Docker na EC2
+## Instalação e configuração do Docker na inicialização da EC2
 A instalação e configuração da máquina foi realizada via Script de <b>Start Instance</b> (user_data.sh). Utilizando os dados de Usuário antes de inicializar a instância em sua configuração é possível 
 configurar tarefas comuns automatizadas e executar scripts, para a instalação do docker em um AMI foi utilizado o seguinte script:
 
@@ -20,4 +20,13 @@ sudo newgrp docker
 #Ativar docker
 sudo systemctl enable docker.service
 sudo systemctl start docker.service
+
+#Instalar o docker compose
+sudo curl -L https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m) -o /usr/local/bin/docker-compose
+sudo chmod +x /usr/local/bin/docker-compose
+
+#Verificar a versão do docker
+docker-compose version
 ```
+
+
