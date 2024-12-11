@@ -2,6 +2,11 @@
 ## Prática para executar os conhecimentos obtidos em Docker e AWS durante o programa de bolsas da Compass UOL
 ## REQUISITOS:
 * Conta AWS
+* VPC
+* Instância EC2 Amazon Linux 2023
+* Security Groups
+* RDS - Database MYSQL
+* EFS - File System
 
 ## Instalação e configuração do Docker na inicialização da EC2
 A instalação e configuração da máquina foi realizada via Script de <b>Start Instance</b> (user_data.sh). Utilizando os dados de Usuário antes de inicializar a instância em sua configuração é possível 
@@ -25,8 +30,7 @@ sudo systemctl start docker.service
 sudo curl -L https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m) -o /usr/local/bin/docker-compose
 sudo chmod +x /usr/local/bin/docker-compose
 
-#Verificar a versão do docker
-docker-compose version
+
 ```
 
 
