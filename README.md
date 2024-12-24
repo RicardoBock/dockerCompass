@@ -450,6 +450,7 @@ O Auto Scalling é uma função da AWS que permite a alocação de mais instânc
 
 ## CONCLUSÃO
 
+A utilização da AWS e seus serviços permite com que aplicações WEB estejam disponíveis e integros, com a possibilidade de escalabilidade de acordo com as necessidades dos clientes, conceitos como docker, banco de dados, requisições e seus códigos e arquitetura de sistemas foi reforçado com a prática deste projeto.
 
 
 
