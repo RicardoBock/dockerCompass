@@ -9,20 +9,80 @@
 * EFS - File System
 * ELB - Elastic Load Balancer
 
-## Criação de uma VPC de três camadas:
+## Criação de uma VPC:
 A criação de uma VPC (<i>Virtual Private Cloud</i>) é necessária, no qual será constituída por 4 subnets, 2 públicas e 2 privadas, 1 internet gateway para acesso a rede da subnet pública e 1 NAT gateway para acesso da rede das subnets privadas, as sub-redes vão ser utilizadas da seguinte forma:
  * Duas públicas para o acesso do Load Balancer e do bastion host as instâncias na sub-redes privadas;
- * Duas privadas para utilização das instâncias privadas;
- * Duas privadas para a utilização dos bancos de dados.
-<imagem do esquema do VPC>
+ * Duas privadas para utilização das instâncias privadas e do banco de dados;
+   
+<img src=https://github.com/RicardoBock/dockerCompass/blob/main/imgs/vpc.png>
+
+<img src=https://github.com/RicardoBock/dockerCompass/blob/main/imgs/subnets.png>
 
 ## Criação dos grupos de segurança:
 Os grupos de segurança servem para configurar os acessos dos diferentes tipos de protocolo que permite apenas o tráfego autorizado e bloqueia tentativas de acesso não autorizadas, é necessário configurar os grupos de segurança para o EC2, RDS, EFS e ELB. As configurações necessárias se encontram a seguir nas tabelas:</br>
 
-imgagem dos sg
+<img src=https://github.com/RicardoBock/dockerCompass/blob/main/imgs/Ssgsss.png>
+<hr>
+
+**CONFIGURAÇÃO DO SECURITY GROUP EC2 PÚBLICO**
+
+INBOUND RULES:
+<table>
+  
+  <thead>
+    <tr>
+      <th>TIPO
+      </th>
+      <th>
+        INTERVALO DE PORTAS
+      </th>
+      <th>
+        ORIGEM
+      </th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>SHH</td>
+      <td>22</td>
+      <td>Meu IP</td>
+    </tr>
+    <tr>
+      <td>HTTP</td>
+      <td>80</td>
+      <td>0.0.0.0/0</td>
+    </tr>
+  </table>
+
+OUTBOUND RULES:
 
 
-<b>CONFIGURAÇÃO DO SECURITY GROUP EC2 </b> 
+<table>
+  
+  <thead>
+    <tr>
+      <th>TIPO
+      </th>
+      <th>
+        INTERVALO DE PORTAS
+      </th>
+      <th>
+        ORIGEM
+      </th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Todo o tráfego</td>
+      <td>Tudo</td>
+      <td>0.0.0.0/0</td>
+    </tr>
+  </tbody>
+</table>
+  
+ <hr>
+      
+**CONFIGURAÇÃO DO SECURITY GROUP EC2 PRIVADO**  
 
 
 INBOUND RULES:
@@ -281,15 +341,30 @@ A criação do banco de dados foi realizada utilizando o RDS (<i>Relational Data
 
 ## CRIAÇÃO DO ELASTIC FYLE SYSTEM
 
-O <i>Amazon Elastic File System</i> é utilizado para armazenamento de arquivos elástico, isto é, aumenta ou diminui o seu tamanho de acordo com a necessidade, permitindo assim escalabilidade 
+O _Amazon Elastic File System_ é utilizado para armazenamento de arquivos elástico, isto é, aumenta ou diminui o seu tamanho de acordo com a necessidade, permitindo assim escalabilidade, para a sua criação é realizado o seguinte processo:
 
-<img do efs funcional na instância>
+1º Criação da EFS <br>
+2º Configuração das subredes e o grupo de segurança que será utilizado o EFS <br>
+3º Anexar via DNS com a linha no terminal <br>
+
+```
+sudo mount -t nfs -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport file-system-id.efs.aws-region.amazonaws.com:/ /efs-mount-point
+```
+Quando criado o EFS e atrelado a instância é possível verificar seu funcionamento por meio do comando
+
+```
+df -h
+```
+
+<img src=https://github.com/RicardoBock/dockerCompass/blob/main/imgs/efs%20funcional.png>
+
 
 ## Instalação e configuração do Docker na inicialização da EC2
-A criação da de um <i>NAT GATEWAY</i> para a instalação dos pacotes na instância privada é necessário, para a realização desta etapa é necessária, possibilitando a conexão das instâncias privadas para fora da VPC sem a possibilidade de acesso externo
+A criação da de um <i>NAT GATEWAY</i> para a instalação dos pacotes na instância privada é necessário, para a realização desta etapa é necessária, possibilitando a conexão das instâncias privadas para fora da VPC sem a possibilidade de acesso externo, com a criação do NAT GATEWAY e um ip elástico atribuido a ele, na tabela de rotas das rotas da subnet privadas é necessário anexar a _NAT GATEWAY_ as rotas da subnet específica
 
 
-imagem da nat gateway
+<img src=https://github.com/RicardoBock/dockerCompass/blob/main/imgs/natgateway.png>
+
 
 
 A máquina alocada na EC2 foi a AMI 2023 (<i>Amazon Machine Image</i>), o grupo de segurança para EC2 criado anteriormente foi utilizado e a instalação e configuração da máquina foi realizada via Script de <b>Start Instance</b> (user_data.sh). Utilizando os dados de Usuário antes de inicializar a instância em sua configuração é possível configurar tarefas comuns automatizadas e executar scripts, para a instalação do docker foi utilizado o seguinte script:
@@ -349,15 +424,31 @@ vi "nome-da-chave.pem" (aqui é realizada a cópia da instância da máquina loc
 ssh -i "nome-da-chave.pem" ec2-user@ip-privado-da-instância
 ```
 
-** Criação do Load Balancer 
-Para esta aplicação foi utilizado o <i>Classic Load Balancer</i>, sua função é distribuir o tráfego de aplicações de entrada entre vários destinos e dispositivos virtuais em uma ou mais zonas de disponibilide
-Na criação foi necessário modificar o PATH de verificação de integridade para "/wp-admin/install.php" devido ao código de retorno de sucesso, que no caso do wordpress é 301 ou 302 e do classic load balancer é 200, caso não seja feita esta modificação, as instâncias não vão passar no _HEALTH CHECK_ e não sera possível acessar o site por meio do DNS do load balancer 
-<imagem do health check do load balancer 
 
-** Criação do auto Scalling 
+## CRIAÇÃO DO LOAD BALANCER
+
+
+Para esta aplicação foi utilizado o <i>Classic Load Balancer</i>, sua função é distribuir o tráfego de aplicações de entrada entre vários destinos e dispositivos virtuais em uma ou mais zonas de disponibilide
+Na criação foi necessário modificar o PATH de verificação de integridade para _"/wp-admin/install.php"_ devido ao código de retorno de sucesso, que no caso do wordpress é 301 ou 302 e do classic load balancer é 200, caso não seja feita esta modificação, as instâncias não vão passar no _HEALTH CHECK_ e não sera possível acessar o site por meio do DNS do load balancer.
+Após a criação e atríbuidas as instâncias privadas, será realizado o teste de integridade, caso teste de integridade concluído com sucesso será possível acessar o site via DNS
+
+<img src=https://github.com/RicardoBock/dockerCompass/blob/main/imgs/Instancias_health_check.png>
+
+Ao acessar o DNS em que o AWS disponibiliza, e a página de configuração do Wordpress aparecer, o load balancer e as instâncias estão funcionais 
+
+<img src=https://github.com/RicardoBock/dockerCompass/blob/main/imgs/site_funcional.png>
+
+<img src=https://github.com/RicardoBock/dockerCompass/blob/main/imgs/Site_funcional_2.png>
+
+
+## CRIAÇÃO DO AUTO SCALLING
+
+
 O Auto Scalling é uma função da AWS que permite a alocação de mais instâncias dependendo do número de acessos e requests nos servidores, permitindo uma escalabilidade nos serviços e disponibilidade instantânea, sua configuração é feita com a quantidade mínima e máxima de instâncias que é desejado obter caso ocorra algum problema, como foi criado o auto scalling para meios de educação o máximo de instâncias configurados foram 2, o teste é realizado derrubando a instância original e percebendo a reposição quase instantânea por outra reposição.
 
-img do autoscalling funcional 
+<img src=https://github.com/RicardoBock/dockerCompass/blob/main/imgs/auto-scalling-funcionando.png>
+
+## CONCLUSÃO
 
 
 
