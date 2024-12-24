@@ -1,3 +1,4 @@
+<img src=https://github.com/RicardoBock/dockerCompass/blob/main/imgs/compass.png>
 # DOCKER E AWS - COMPASS UOL
 ## Prática para executar os conhecimentos obtidos em Docker e AWS durante o programa de bolsas da Compass UOL
 ## REQUISITOS:
