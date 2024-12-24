@@ -10,7 +10,7 @@
 * ELB - Elastic Load Balancer
 
 ## Criação de uma VPC de três camadas:
-A criação de uma VPC (<i>Virtual Private Cloud</i>) é necessária, no qual será constituída por 6 subnets, 2 públicas e 4 privadas, 1 internet gateway para acesso a rede da subnet pública e 1 NAT gateway para acesso da rede das subnets privadas, as sub-redes vão ser utilizadas da seguinte forma:
+A criação de uma VPC (<i>Virtual Private Cloud</i>) é necessária, no qual será constituída por 4 subnets, 2 públicas e 2 privadas, 1 internet gateway para acesso a rede da subnet pública e 1 NAT gateway para acesso da rede das subnets privadas, as sub-redes vão ser utilizadas da seguinte forma:
  * Duas públicas para o acesso do Load Balancer e do bastion host as instâncias na sub-redes privadas;
  * Duas privadas para utilização das instâncias privadas;
  * Duas privadas para a utilização dos bancos de dados.
@@ -18,6 +18,10 @@ A criação de uma VPC (<i>Virtual Private Cloud</i>) é necessária, no qual se
 
 ## Criação dos grupos de segurança:
 Os grupos de segurança servem para configurar os acessos dos diferentes tipos de protocolo que permite apenas o tráfego autorizado e bloqueia tentativas de acesso não autorizadas, é necessário configurar os grupos de segurança para o EC2, RDS, EFS e ELB. As configurações necessárias se encontram a seguir nas tabelas:</br>
+
+imgagem dos sg
+
+
 <b>CONFIGURAÇÃO DO SECURITY GROUP EC2 </b> 
 
 
@@ -40,7 +44,7 @@ INBOUND RULES:
     <tr>
       <td>SHH</td>
       <td>22</td>
-      <td>Meu IP</td>
+      <td>Security Group da EC2 Pública</td>
     </tr>
     <tr>
       <td>NFS</td>
@@ -269,18 +273,25 @@ OUTBOUND RULES:
 
 ## CRIAÇÃO DO BANCO DE DADOS RDS
 
-A criação do banco de dados foi realizada utilizando o RDS (<i>Relational Database Services</i>), o banco de dados alocado foi o MySQL v8.0.39, o grupo de segurança criado para o RDS anteriormente foi utilizado, o nome do banco de dados, o usuário e a senha foram definidas e suas sub-redes privadas próprias em duas zonas de disponibilidade:
+A criação do banco de dados foi realizada utilizando o RDS (<i>Relational Database Services</i>), o banco de dados alocado foi o MySQL v8.0.39, o grupo de segurança criado para o RDS anteriormente foi utilizado, o nome do banco de dados, o usuário e a senha foram definidas e suas sub-redes privadas em duas zonas de disponibilidade:
 
-* us-east-1a (rds-subnet-privada-1a)
-* us-east-1b (rds-subnet-privada-1b)
+* us-east-1a (PROJETO-WORDPRESS-PRIVADA-1A)
+* us-east-1b (PROJETO-WORDPRESS-PRIVADA-1B)
 
-Ao criar o banco de dados é gerado um endpoint necessário para utilizar no documento compose.yml.
 
 ## CRIAÇÃO DO ELASTIC FYLE SYSTEM
 
 O <i>Amazon Elastic File System</i> é utilizado para armazenamento de arquivos elástico, isto é, aumenta ou diminui o seu tamanho de acordo com a necessidade, permitindo assim escalabilidade 
 
+<img do efs funcional na instância>
+
 ## Instalação e configuração do Docker na inicialização da EC2
+A criação da de um <i>NAT GATEWAY</i> para a instalação dos pacotes na instância privada é necessário, para a realização desta etapa é necessária, possibilitando a conexão das instâncias privadas para fora da VPC sem a possibilidade de acesso externo
+
+
+imagem da nat gateway
+
+
 A máquina alocada na EC2 foi a AMI 2023 (<i>Amazon Machine Image</i>), o grupo de segurança para EC2 criado anteriormente foi utilizado e a instalação e configuração da máquina foi realizada via Script de <b>Start Instance</b> (user_data.sh). Utilizando os dados de Usuário antes de inicializar a instância em sua configuração é possível configurar tarefas comuns automatizadas e executar scripts, para a instalação do docker foi utilizado o seguinte script:
 
 ```
@@ -325,8 +336,29 @@ docker-compose -f /app/compose.yml up -d
 
 Duas instâncias criadas em diferentes sub-redes privadas em diferentes zonas de disponibilidade diferentes:
 
-* us-east-1a (ec2-subnet-privada-1a)
-* us-east-1b (ec2-subnet-privada-1b)
+* us-east-1a (PROJETO-WORDPRESS-PRIVADA-1A)
+* us-east-1b (PROJETO-WORDPRESS-PRIVADA-1B)
+
+<img instancia>
+
+A criação de uma instância em uma subrede pública foi realizada para a utilização dela como um bastion-host, no qual é possível o acesso por meio da cópia da chave .pem da maquina particular para esta instância e acessando esta instância por meio do código:
+
+```
+cd ~.ssh
+vi "nome-da-chave.pem" (aqui é realizada a cópia da instância da máquina local)
+ssh -i "nome-da-chave.pem" ec2-user@ip-privado-da-instância
+```
+
+** Criação do Load Balancer 
+Para esta aplicação foi utilizado o <i>Classic Load Balancer</i>, sua função é distribuir o tráfego de aplicações de entrada entre vários destinos e dispositivos virtuais em uma ou mais zonas de disponibilide
+Na criação foi necessário modificar o PATH de verificação de integridade para "/wp-admin/install.php" devido ao código de retorno de sucesso, que no caso do wordpress é 301 ou 302 e do classic load balancer é 200, caso não seja feita esta modificação, as instâncias não vão passar no _HEALTH CHECK_ e não sera possível acessar o site por meio do DNS do load balancer 
+<imagem do health check do load balancer 
+
+** Criação do auto Scalling 
+O Auto Scalling é uma função da AWS que permite a alocação de mais instâncias dependendo do número de acessos e requests nos servidores, permitindo uma escalabilidade nos serviços e disponibilidade instantânea, sua configuração é feita com a quantidade mínima e máxima de instâncias que é desejado obter caso ocorra algum problema, como foi criado o auto scalling para meios de educação o máximo de instâncias configurados foram 2, o teste é realizado derrubando a instância original e percebendo a reposição quase instantânea por outra reposição.
+
+img do autoscalling funcional 
+
 
 
 
